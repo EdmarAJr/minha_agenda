@@ -23,18 +23,45 @@ public class SecurityFilter extends OncePerRequestFilter {
         this.usuarioRepository = usuarioRepository;
     }
 
+    // @Override
+    // protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    //     throws ServletException, IOException {
+    //     var tokenJWT = recuperarToken(request);
+    //     if (tokenJWT != null){
+    //         var login = tokenService.getSubject(tokenJWT);
+    //         var usuario = usuarioRepository.findByUsername(login);
+    //         if (usuario != null) {
+    //             var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+    //             SecurityContextHolder.getContext().setAuthentication(authentication);
+    //         }
+    //     }
+    //     filterChain.doFilter(request, response);
+    // }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
+        
         var tokenJWT = recuperarToken(request);
-        if (tokenJWT != null){
+        
+        if (tokenJWT != null) {
             var login = tokenService.getSubject(tokenJWT);
-            var usuario = usuarioRepository.findByUsername(login);
-            var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // SÓ ENTRA SE O LOGIN NÃO FOR NULO
+            if (login != null) { 
+                var usuario = usuarioRepository.findByUsername(login);
+                
+                if (usuario != null) {
+                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
         }
+        
+        // Deixa a requisição seguir. Se for rota do Swagger, o Spring Configurations vai permitir o acesso!
         filterChain.doFilter(request, response);
     }
+
     //valida o token que vem do header da requisição
     public String recuperarToken(HttpServletRequest request) {
         var token = request.getHeader("Authorization");

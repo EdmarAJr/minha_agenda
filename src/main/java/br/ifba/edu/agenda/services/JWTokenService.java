@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Service
 public class JWTokenService {
@@ -20,7 +22,7 @@ public class JWTokenService {
         try {
             var algoritmo = Algorithm.HMAC256(secret);
             return JWT.create()
-                    .withIssuer("auth-api")
+                    .withIssuer("br.ifba.edu.agenda")
                     .withSubject(usuario.getUsername())
                     .withExpiresAt(dataExpiracao())
                     .sign(algoritmo);
@@ -30,19 +32,40 @@ public class JWTokenService {
     }
 
     private Instant dataExpiracao() {
-        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+        return ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
+            .plusHours(2)
+            .toInstant();
     }
 
-    public String getSubject(String tokenJWT){
-        try {
-            var algoritmo = Algorithm.HMAC256(secret);
-            return JWT.require(algoritmo)
-                    .withIssuer("auth-api")
-                    .build()
-                    .verify(tokenJWT)
-                    .getSubject();
-    } catch (JWTVerificationException exception){
-        throw new RuntimeException("Token JWT inválido ou expirado!");
-        }
+    // public String getSubject(String tokenJWT){
+    //     try {
+    //         var algoritmo = Algorithm.HMAC256(secret);
+    //         return JWT.require(algoritmo)
+    //                 .withIssuer("auth-api")
+    //                 .build()
+    //                 .verify(tokenJWT)
+    //                 .getSubject();
+    // } catch (JWTVerificationException exception){
+    //     throw new RuntimeException("Token JWT inválido ou expirado!");
+    //     }
+    // }
+
+    public String getSubject(String tokenJWT) {
+    try {
+        // Substitua pelo algoritmo e secret reais do seu projeto
+        var algoritmo = Algorithm.HMAC256(secret); 
+        
+        return JWT.require(algoritmo)
+                .withIssuer("br.ifba.edu.agenda") // Garanta que o Issuer bate exatamente com o do gerarToken
+                .build()
+                .verify(tokenJWT)
+                .getSubject();
+                
+    } catch (JWTVerificationException exception) {
+        // EM VEZ DE JOGAR RUNTIMEEXCEPTION: Retorna null!
+        // Isso avisa o seu SecurityFilter que o token atual é inválido,
+        // mas permite que rotas públicas como o cadastro continuem funcionando.
+        return null; 
     }
+}
 }
